@@ -1,8 +1,6 @@
-// ====== BANCO DE DADOS COM INDEXEDDB (Mais robusto e persistente) ======
-// Dados padrão caso seja o primeiro acesso
 const produtosIniciais = [
-    { id: 1, tipo: 'prato', nome: 'Marmita Tradicional', descricao: 'Arroz, feijão, bife acebolado e fritas', preco: 25.90, imagem: 'https://images.unsplash.com/photo-1628294895950-9805252327bc?auto=format&fit=crop&w=500&q=80' },
-    { id: 2, tipo: 'prato', nome: 'Marmita Fit', descricao: 'Arroz integral, frango grelhado e legumes', preco: 28.00, imagem: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80' },
+    { id: 1, tipo: 'prato', nome: 'Marmita Tradicional', descricao: 'Arroz, feijão, bife acebolado e fritas', precoP: 20.00, precoM: 25.90, precoG: 30.00, imagem: 'https://images.unsplash.com/photo-1628294895950-9805252327bc?auto=format&fit=crop&w=500&q=80' },
+    { id: 2, tipo: 'prato', nome: 'Marmita Fit', descricao: 'Arroz integral, frango grelhado e legumes', precoP: 22.00, precoM: 28.00, precoG: 33.00, imagem: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80' },
     { id: 3, tipo: 'bebida', nome: 'Suco de Laranja 500ml', descricao: 'Feito na hora', preco: 9.00, imagem: 'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
     { id: 4, tipo: 'bebida', nome: 'Coca-Cola Lata', descricao: '350ml - Gelada', preco: 6.50, imagem: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=500&q=80' }
 ];
@@ -24,13 +22,11 @@ function atualizarImagemSucoLaranja() {
     }
 }
 
-// Inicializa IndexedDB
 function inicializarBD() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open('MarmitariaDB', 1);
         
         request.onerror = () => {
-            console.error('Erro ao abrir IndexedDB');
             carregarDoLocalStorage();
             resolve();
         };
@@ -44,7 +40,6 @@ function inicializarBD() {
         
         request.onupgradeneeded = (event) => {
             const database = event.target.result;
-            
             if (!database.objectStoreNames.contains('produtos')) {
                 database.createObjectStore('produtos', { keyPath: 'id' });
             }
@@ -57,10 +52,7 @@ function inicializarBD() {
 
 function criarTabelas() {
     if (!db) return;
-    
     const transaction = db.transaction(['produtos', 'carrinho'], 'readwrite');
-    const produtosStore = transaction.objectStore('produtos');
-    const carrinhoStore = transaction.objectStore('carrinho');
 }
 
 function carregarDadosBD() {
@@ -71,7 +63,6 @@ function carregarDadosBD() {
     
     const transaction = db.transaction(['produtos', 'carrinho'], 'readonly');
     
-    // Carrega produtos
     const produtosRequest = transaction.objectStore('produtos').getAll();
     produtosRequest.onsuccess = () => {
         const dados = produtosRequest.result;
@@ -86,7 +77,6 @@ function carregarDadosBD() {
         carregarAdminList();
     };
     
-    // Carrega carrinho
     const carrinhoRequest = transaction.objectStore('carrinho').getAll();
     carrinhoRequest.onsuccess = () => {
         carrinho = carrinhoRequest.result;
@@ -101,37 +91,37 @@ function carregarDoLocalStorage() {
     salvarDados();
 }
 
-// Salva o estado atual no IndexedDB e LocalStorage como backup
 function salvarDados() {
-    // Salva em LocalStorage como backup
     localStorage.setItem('marmitaria_produtos', JSON.stringify(produtos));
     localStorage.setItem('marmitaria_carrinho', JSON.stringify(carrinho));
     
-    // Salva em IndexedDB
     if (!db) return;
     
     const transaction = db.transaction(['produtos', 'carrinho'], 'readwrite');
     const produtosStore = transaction.objectStore('produtos');
     const carrinhoStore = transaction.objectStore('carrinho');
     
-    // Limpa e salva produtos
     produtosStore.clear();
-    produtos.forEach(produto => {
-        produtosStore.add(produto);
-    });
+    produtos.forEach(produto => { produtosStore.add(produto); });
     
-    // Limpa e salva carrinho
     carrinhoStore.clear();
-    carrinho.forEach(item => {
-        carrinhoStore.add(item);
-    });
+    carrinho.forEach(item => { carrinhoStore.add(item); });
 }
 
-// ====== LÓGICA DO CLIENTE (index.html) ======
+function atualizarPrecoExibido(id, tamanhoSelecionado) {
+    const produto = produtos.find(p => p.id === id);
+    let precoAtual = 0;
+    
+    if (tamanhoSelecionado === 'P') precoAtual = produto.precoP;
+    if (tamanhoSelecionado === 'M') precoAtual = produto.precoM;
+    if (tamanhoSelecionado === 'G') precoAtual = produto.precoG;
+    
+    document.getElementById(`preco-display-${id}`).innerText = `R$ ${precoAtual.toFixed(2).replace('.', ',')}`;
+}
 
 function carregarProdutos(filtro = 'todos') {
     const container = document.getElementById('menu-container');
-    if (!container) return; // Se não estiver na index, não faz nada
+    if (!container) return; 
 
     container.innerHTML = '';
     
@@ -140,13 +130,33 @@ function carregarProdutos(filtro = 'todos') {
         : produtos.filter(p => p.tipo === filtro);
 
     produtosFiltrados.forEach(produto => {
+        let seletorTamanho = '';
+        let precoExibido = 0;
+
+        if (produto.tipo === 'prato') {
+            precoExibido = produto.precoM || 0;
+            seletorTamanho = `
+                <div style="margin-bottom: 15px; margin-top: auto;">
+                    <label for="tamanho-${produto.id}" style="font-size: 0.9rem; color: #6c757d; font-weight: bold;">Tamanho da Marmita:</label>
+                    <select id="tamanho-${produto.id}" class="select-tamanho" onchange="atualizarPrecoExibido(${produto.id}, this.value)">
+                        <option value="P">Pequena (P) - R$ ${(produto.precoP || 0).toFixed(2).replace('.', ',')}</option>
+                        <option value="M" selected>Média (M) - R$ ${(produto.precoM || 0).toFixed(2).replace('.', ',')}</option>
+                        <option value="G">Grande (G) - R$ ${(produto.precoG || 0).toFixed(2).replace('.', ',')}</option>
+                    </select>
+                </div>
+            `;
+        } else {
+            precoExibido = produto.preco || 0;
+        }
+
         container.innerHTML += `
             <div class="card">
                 <img src="${produto.imagem}" alt="${produto.nome}">
                 <div class="card-body">
                     <h3 class="card-title">${produto.nome}</h3>
                     <p class="card-desc">${produto.descricao}</p>
-                    <div class="card-price">R$ ${produto.preco.toFixed(2).replace('.', ',')}</div>
+                    ${seletorTamanho}
+                    <div class="card-price" id="preco-display-${produto.id}">R$ ${precoExibido.toFixed(2).replace('.', ',')}</div>
                     <button class="btn-primary w-100" onclick="adicionarAoCarrinho(${produto.id})">
                         <i class="fa-solid fa-cart-plus"></i> Adicionar
                     </button>
@@ -157,14 +167,11 @@ function carregarProdutos(filtro = 'todos') {
 }
 
 function filtrarMenu(tipo) {
-    // Atualiza botões
     document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    // Recarrega lista
     carregarProdutos(tipo);
 }
 
-// Lógica do Carrinho
 function toggleCart() {
     const sidebar = document.getElementById('cart-sidebar');
     sidebar.classList.toggle('open');
@@ -172,11 +179,22 @@ function toggleCart() {
 }
 
 function adicionarAoCarrinho(id) {
-    const produto = produtos.find(p => p.id === id);
-    carrinho.push(produto);
+    const produtoOriginal = produtos.find(p => p.id === id);
+    const itemCarrinho = { ...produtoOriginal };
+
+    if (itemCarrinho.tipo === 'prato') {
+        const tamanhoSelecionado = document.getElementById(`tamanho-${id}`).value;
+        itemCarrinho.nome = `${itemCarrinho.nome} (Tam: ${tamanhoSelecionado})`;
+        
+        if (tamanhoSelecionado === 'P') itemCarrinho.preco = itemCarrinho.precoP;
+        else if (tamanhoSelecionado === 'M') itemCarrinho.preco = itemCarrinho.precoM;
+        else if (tamanhoSelecionado === 'G') itemCarrinho.preco = itemCarrinho.precoG;
+    }
+
+    carrinho.push(itemCarrinho);
     salvarDados();
     renderizarCarrinho();
-    mostrarNotificacao(`✅ ${produto.nome} adicionado!`);
+    mostrarNotificacao(`✅ Adicionado ao carrinho!`);
 }
 
 function removerDoCarrinho(index) {
@@ -217,17 +235,16 @@ function renderizarCarrinho() {
     cartTotal.innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
     cartCount.innerText = carrinho.length;
 }
-// Função para mostrar ou esconder o campo de troco
+
 function verificarTroco() {
     const formaPagamento = document.getElementById('forma-pagamento').value;
     const divTroco = document.getElementById('div-troco');
     
-    // Se escolheu dinheiro, mostra o campo. Se não, esconde.
     if (formaPagamento === 'Dinheiro') {
         divTroco.style.display = 'block';
     } else {
         divTroco.style.display = 'none';
-        document.getElementById('troco').value = ''; // Limpa o valor do troco
+        document.getElementById('troco').value = ''; 
     }
 }
 
@@ -237,11 +254,9 @@ function enviarWhatsApp() {
         return;
     }
 
-    // 1. Captura as informações de pagamento
     const formaPagamento = document.getElementById('forma-pagamento').value;
     let infoPagamento = `\n*Forma de Pagamento:* ${formaPagamento}`;
 
-    // Se for dinheiro, pega o valor do troco
     if (formaPagamento === 'Dinheiro') {
         const troco = document.getElementById('troco').value;
         if (troco) {
@@ -251,7 +266,6 @@ function enviarWhatsApp() {
         }
     }
 
-    // 2. Monta o cabeçalho e os itens
     let texto = "*Novo Pedido - Sabor de Casa* 🍲\n\n";
     let total = 0;
 
@@ -260,11 +274,9 @@ function enviarWhatsApp() {
         total += item.preco;
     });
 
-    // 3. Monta o rodapé juntando o total e a forma de pagamento
     texto += `\n*Valor Total: R$ ${total.toFixed(2).replace('.', ',')}*`;
     texto += infoPagamento;
 
-    // Coloque seu número aqui
     const telefone = "5544998733601"; 
     window.open(`https://wa.me/${telefone}?text=${encodeURIComponent(texto)}`, '_blank');
 }
@@ -281,8 +293,47 @@ function mostrarNotificacao(mensagem) {
     }, 3000);
 }
 
+function realizarLogin() {
+    const u = document.getElementById('login-user').value;
+    const p = document.getElementById('login-pass').value;
 
-// ====== LÓGICA DO VENDEDOR (admin.html) ======
+    if (u === 'admin' && p === '1234') {
+        sessionStorage.setItem('adminAutenticado', 'true');
+        liberarAdmin();
+    } else {
+        document.getElementById('login-erro').style.display = 'block';
+    }
+}
+
+function fazerLogout() {
+    sessionStorage.removeItem('adminAutenticado');
+    window.location.reload();
+}
+
+function liberarAdmin() {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('admin-content').style.display = 'block';
+}
+
+function checarSessao() {
+    const overlay = document.getElementById('login-overlay');
+    if (!overlay) return; 
+
+    if (sessionStorage.getItem('adminAutenticado') === 'true') {
+        liberarAdmin();
+    }
+}
+
+function alternarCamposPreco() {
+    const tipo = document.getElementById('tipo').value;
+    if (tipo === 'prato') {
+        document.getElementById('div-precos-marmita').style.display = 'flex';
+        document.getElementById('div-preco-unico').style.display = 'none';
+    } else {
+        document.getElementById('div-precos-marmita').style.display = 'none';
+        document.getElementById('div-preco-unico').style.display = 'block';
+    }
+}
 
 function carregarAdminList() {
     const lista = document.getElementById('admin-list');
@@ -290,11 +341,18 @@ function carregarAdminList() {
 
     lista.innerHTML = '';
     produtos.forEach(produto => {
+        let infoPreco = '';
+        if (produto.tipo === 'prato') {
+            infoPreco = `P: R$ ${(produto.precoP || 0).toFixed(2)} | M: R$ ${(produto.precoM || 0).toFixed(2)} | G: R$ ${(produto.precoG || 0).toFixed(2)}`;
+        } else {
+            infoPreco = `R$ ${(produto.preco || 0).toFixed(2).replace('.', ',')}`;
+        }
+
         lista.innerHTML += `
             <div class="admin-item">
                 <div>
                     <strong>${produto.nome}</strong> (${produto.tipo})<br>
-                    <small>R$ ${produto.preco.toFixed(2).replace('.', ',')}</small>
+                    <small style="color: #2a9d8f; font-weight: bold;">${infoPreco}</small>
                 </div>
                 <div class="action-buttons">
                     <button class="btn-secondary" onclick="editarProdutoAdmin(${produto.id})">Editar</button>
@@ -314,13 +372,11 @@ if (formAdmin) {
         const inputImagem = document.getElementById('imagem');
         const arquivo = inputImagem.files[0];
 
-        // Se for um produto NOVO e não tem foto, avisa o erro
         if (!arquivo && !editId) {
             alert("Por favor, selecione uma imagem para o novo produto!");
             return;
         }
 
-        // Se ele enviou uma foto nova, nós lemos a foto
         if (arquivo) {
             const leitor = new FileReader();
             leitor.onload = function(evento) {
@@ -328,7 +384,6 @@ if (formAdmin) {
             };
             leitor.readAsDataURL(arquivo);
         } else {
-            // Se ele não enviou foto nova, usamos a foto antiga que já estava salva
             const produtoExistente = produtos.find(p => p.id == editId);
             salvarOuAtualizarProduto(editId, produtoExistente.imagem);
         }
@@ -336,52 +391,84 @@ if (formAdmin) {
 }
 
 function salvarOuAtualizarProduto(editId, imagemBase64) {
+    const tipoProd = document.getElementById('tipo').value;
+    
+    let precoP = 0, precoM = 0, precoG = 0, precoUnico = 0;
+    
+    if (tipoProd === 'prato') {
+        precoP = parseFloat(document.getElementById('preco-p').value) || 0;
+        precoM = parseFloat(document.getElementById('preco-m').value) || 0;
+        precoG = parseFloat(document.getElementById('preco-g').value) || 0;
+    } else {
+        precoUnico = parseFloat(document.getElementById('preco').value) || 0;
+    }
+
     if (editId) {
-        // MODO ATUALIZAR
         const index = produtos.findIndex(p => p.id == editId);
         if(index !== -1){
-            produtos[index].tipo = document.getElementById('tipo').value;
+            produtos[index].tipo = tipoProd;
             produtos[index].nome = document.getElementById('nome').value;
             produtos[index].descricao = document.getElementById('descricao').value;
-            produtos[index].preco = parseFloat(document.getElementById('preco').value);
             produtos[index].imagem = imagemBase64;
+            
+            if(tipoProd === 'prato') {
+                produtos[index].precoP = precoP;
+                produtos[index].precoM = precoM;
+                produtos[index].precoG = precoG;
+                delete produtos[index].preco; 
+            } else {
+                produtos[index].preco = precoUnico;
+            }
         }
         mostrarNotificacao("Produto atualizado com sucesso!");
     } else {
-        // MODO ADICIONAR NOVO
         const novoProduto = {
             id: Date.now(),
-            tipo: document.getElementById('tipo').value,
+            tipo: tipoProd,
             nome: document.getElementById('nome').value,
             descricao: document.getElementById('descricao').value,
-            preco: parseFloat(document.getElementById('preco').value),
             imagem: imagemBase64
         };
+        
+        if(tipoProd === 'prato') {
+            novoProduto.precoP = precoP; 
+            novoProduto.precoM = precoM; 
+            novoProduto.precoG = precoG;
+        } else {
+            novoProduto.preco = precoUnico;
+        }
+        
         produtos.push(novoProduto);
         mostrarNotificacao("Produto adicionado com sucesso!");
     }
 
     salvarDados();
     carregarAdminList();
-    cancelarEdicao(); // Limpa o formulário e volta ao modo "Adicionar"
+    cancelarEdicao(); 
 }
 
 function editarProdutoAdmin(id) {
     const produto = produtos.find(p => p.id === id);
     if (!produto) return;
 
-    // Preenche os campos do formulário
     document.getElementById('edit-id').value = produto.id;
     document.getElementById('tipo').value = produto.tipo;
+    alternarCamposPreco();
+
     document.getElementById('nome').value = produto.nome;
     document.getElementById('descricao').value = produto.descricao;
-    document.getElementById('preco').value = produto.preco;
+    
+    if (produto.tipo === 'prato') {
+        document.getElementById('preco-p').value = produto.precoP;
+        document.getElementById('preco-m').value = produto.precoM;
+        document.getElementById('preco-g').value = produto.precoG;
+    } else {
+        document.getElementById('preco').value = produto.preco;
+    }
 
-    // Muda o visual do botão e mostra o botão de cancelar
     document.getElementById('btn-submit').innerHTML = '<i class="fa-solid fa-save"></i> Salvar Alterações';
     document.getElementById('btn-cancel').style.display = 'block';
     
-    // Rola a página para cima
     window.scrollTo(0, 0);
 }
 
@@ -390,6 +477,7 @@ function cancelarEdicao() {
     document.getElementById('form-add-item').reset();
     document.getElementById('btn-submit').innerHTML = '<i class="fa-solid fa-plus"></i> Salvar no Cardápio';
     document.getElementById('btn-cancel').style.display = 'none';
+    alternarCamposPreco();
 }
 
 function removerProdutoAdmin(id) {
@@ -406,11 +494,14 @@ function limparCardapio() {
     }
 }
 
-// Executar ao carregar a página
 window.onload = () => {
     inicializarBD().then(() => {
         carregarProdutos();
         renderizarCarrinho();
-        carregarAdminList();
+        checarSessao();
+        if(document.getElementById('admin-list')) {
+            alternarCamposPreco();
+            carregarAdminList();
+        }
     });
 };

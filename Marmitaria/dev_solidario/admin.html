@@ -8,59 +8,88 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="admin-body">
-    <header>
-        <div class="logo"><i class="fa-solid fa-lock"></i> Painel Gerencial</div>
-        <nav>
-            <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Voltar ao Site</a>
-        </nav>
-    </header>
 
-    <main class="admin-container">
-        <div class="admin-card">
-            <h2>Cadastrar Novo Item</h2>
-           <form id="form-add-item" class="admin-form">
-                <!-- Campo escondido para saber se estamos editando -->
-                <input type="hidden" id="edit-id" value="">
+    <div id="login-overlay" class="login-overlay">
+        <div class="login-box">
+            <h2 style="text-align: center; color: var(--dark); margin-bottom: 20px;"><i class="fa-solid fa-lock"></i> Acesso Restrito</h2>
+            <input type="text" id="login-user" placeholder="Usuário" class="login-input">
+            <input type="password" id="login-pass" placeholder="Senha" class="login-input">
+            <button onclick="realizarLogin()" class="btn-primary w-100">Entrar no Sistema</button>
+            <p id="login-erro" style="color: #e63946; display: none; margin-top: 10px; font-size: 0.9rem; text-align: center;">Usuário ou senha incorretos.</p>
+            <a href="index.html" style="display: block; text-align: center; margin-top: 15px; color: var(--gray); text-decoration: none; font-size: 0.9rem;">Voltar ao Site</a>
+        </div>
+    </div>
 
-                <div class="form-row">
+    <div id="admin-content" style="display: none;">
+        <header>
+            <div class="logo"><i class="fa-solid fa-shield-halved"></i> Painel Gerencial</div>
+            <nav>
+                <a href="#" onclick="fazerLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sair</a>
+                <a href="index.html"><i class="fa-solid fa-arrow-left"></i> Ir para o Site</a>
+            </nav>
+        </header>
+
+        <main class="admin-container">
+            <div class="admin-card">
+                <h2>Cadastrar Novo Item</h2>
+                <form id="form-add-item" class="admin-form">
+                    <input type="hidden" id="edit-id" value="">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="tipo">Categoria</label>
+                            <select id="tipo" required onchange="alternarCamposPreco()">
+                                <option value="prato">Prato</option>
+                                <option value="bebida">Bebida</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="div-preco-unico" style="display: none;">
+                        <label for="preco">Preço Único (R$)</label>
+                        <input type="number" id="preco" step="0.01" placeholder="Ex: 8.00">
+                    </div>
+
+                    <div id="div-precos-marmita" class="form-row">
+                        <div class="form-group">
+                            <label for="preco-p">Tamanho P (R$)</label>
+                            <input type="number" id="preco-p" step="0.01" placeholder="Ex: 20.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="preco-m">Tamanho M (R$)</label>
+                            <input type="number" id="preco-m" step="0.01" placeholder="Ex: 25.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="preco-g">Tamanho G (R$)</label>
+                            <input type="number" id="preco-g" step="0.01" placeholder="Ex: 30.00">
+                        </div>
+                    </div>
+
                     <div class="form-group">
-                        <label for="tipo">Categoria</label>
-                        <select id="tipo" required>
-                            <option value="prato">Prato</option>
-                            <option value="bebida">Bebida</option>
-                        </select>
+                        <label for="nome">Nome do Produto</label>
+                        <input type="text" id="nome" placeholder="Ex: Strogonoff de Carne" required>
                     </div>
                     <div class="form-group">
-                        <label for="preco">Preço (R$)</label>
-                        <input type="number" id="preco" step="0.01" placeholder="Ex: 25.00" required>
+                        <label for="descricao">Descrição dos ingredientes</label>
+                        <textarea id="descricao" rows="2" placeholder="Ex: Acompanha arroz branco e batata palha..." required></textarea>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="nome">Nome do Produto</label>
-                    <input type="text" id="nome" placeholder="Ex: Strogonoff de Carne" required>
-                </div>
-                <div class="form-group">
-                    <label for="descricao">Descrição dos ingredientes</label>
-                    <textarea id="descricao" rows="2" placeholder="Ex: Acompanha arroz branco e batata palha..." required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="imagem">Imagem do Produto (Deixe vazio para manter a atual)</label>
-                    <!-- ATENÇÃO: Tirei o "required" daqui -->
-                    <input type="file" id="imagem" accept="image/*">
-                </div>
-                
-                <button type="submit" id="btn-submit" class="btn-primary w-100"><i class="fa-solid fa-plus"></i> Salvar no Cardápio</button>
-                <button type="button" id="btn-cancel" class="btn-danger w-100 mt-10" style="display: none;" onclick="cancelarEdicao()">Cancelar Edição</button>
-            </form>
-        </div>
-        
-        <div class="admin-card mt-20">
-            <h2>Itens Cadastrados</h2>
-            <div id="admin-list" class="admin-list">
-                </div>
-            <button onclick="limparCardapio()" class="btn-danger mt-20">Resetar Cardápio Padrão</button>
-        </div>
-    </main>
+                    <div class="form-group">
+                        <label for="imagem">Imagem do Produto</label>
+                        <input type="file" id="imagem" accept="image/*">
+                    </div>
+                    
+                    <button type="submit" id="btn-submit" class="btn-primary w-100"><i class="fa-solid fa-plus"></i> Salvar no Cardápio</button>
+                    <button type="button" id="btn-cancel" class="btn-danger w-100 mt-10" style="display: none;" onclick="cancelarEdicao()">Cancelar Edição</button>
+                </form>
+            </div>
+            
+            <div class="admin-card mt-20">
+                <h2>Itens Cadastrados</h2>
+                <div id="admin-list" class="admin-list"></div>
+                <button onclick="limparCardapio()" class="btn-danger mt-20">Resetar Cardápio Padrão</button>
+            </div>
+        </main>
+    </div>
 
     <div id="toast-container" class="toast-container"></div>
     <script src="script.js"></script>
