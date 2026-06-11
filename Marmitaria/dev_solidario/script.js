@@ -1,4 +1,4 @@
-// ====== BANCO DE DADOS SIMULADO (LocalStorage) ======
+// ====== BANCO DE DADOS COM INDEXEDDB (Mais robusto e persistente) ======
 // Dados padrão caso seja o primeiro acesso
 const produtosIniciais = [
     { id: 1, tipo: 'prato', nome: 'Marmita Tradicional', descricao: 'Arroz, feijão, bife acebolado e fritas', preco: 25.90, imagem: 'https://images.unsplash.com/photo-1628294895950-9805252327bc?auto=format&fit=crop&w=500&q=80' },
@@ -7,14 +7,108 @@ const produtosIniciais = [
     { id: 4, tipo: 'bebida', nome: 'Coca-Cola Lata', descricao: '350ml - Gelada', preco: 6.50, imagem: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=500&q=80' }
 ];
 
-// Inicializa ou recupera os dados do navegador
-let produtos = JSON.parse(localStorage.getItem('marmitaria_produtos')) || produtosIniciais;
-let carrinho = JSON.parse(localStorage.getItem('marmitaria_carrinho')) || [];
+let produtos = [];
+let carrinho = [];
+let db = null;
 
-// Salva o estado atual no navegador
+// Inicializa IndexedDB
+function inicializarBD() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open('MarmitariaDB', 1);
+        
+        request.onerror = () => {
+            console.error('Erro ao abrir IndexedDB');
+            carregarDoLocalStorage();
+            resolve();
+        };
+        
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            criarTabelas();
+            carregarDadosBD();
+            resolve();
+        };
+        
+        request.onupgradeneeded = (event) => {
+            const database = event.target.result;
+            
+            if (!database.objectStoreNames.contains('produtos')) {
+                database.createObjectStore('produtos', { keyPath: 'id' });
+            }
+            if (!database.objectStoreNames.contains('carrinho')) {
+                database.createObjectStore('carrinho', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+    });
+}
+
+function criarTabelas() {
+    if (!db) return;
+    
+    const transaction = db.transaction(['produtos', 'carrinho'], 'readwrite');
+    const produtosStore = transaction.objectStore('produtos');
+    const carrinhoStore = transaction.objectStore('carrinho');
+}
+
+function carregarDadosBD() {
+    if (!db) {
+        carregarDoLocalStorage();
+        return;
+    }
+    
+    const transaction = db.transaction(['produtos', 'carrinho'], 'readonly');
+    
+    // Carrega produtos
+    const produtosRequest = transaction.objectStore('produtos').getAll();
+    produtosRequest.onsuccess = () => {
+        const dados = produtosRequest.result;
+        if (dados.length > 0) {
+            produtos = dados;
+        } else {
+            produtos = produtosIniciais;
+            salvarDados();
+        }
+        carregarProdutos();
+        carregarAdminList();
+    };
+    
+    // Carrega carrinho
+    const carrinhoRequest = transaction.objectStore('carrinho').getAll();
+    carrinhoRequest.onsuccess = () => {
+        carrinho = carrinhoRequest.result;
+        renderizarCarrinho();
+    };
+}
+
+function carregarDoLocalStorage() {
+    produtos = JSON.parse(localStorage.getItem('marmitaria_produtos')) || produtosIniciais;
+    carrinho = JSON.parse(localStorage.getItem('marmitaria_carrinho')) || [];
+}
+
+// Salva o estado atual no IndexedDB e LocalStorage como backup
 function salvarDados() {
+    // Salva em LocalStorage como backup
     localStorage.setItem('marmitaria_produtos', JSON.stringify(produtos));
     localStorage.setItem('marmitaria_carrinho', JSON.stringify(carrinho));
+    
+    // Salva em IndexedDB
+    if (!db) return;
+    
+    const transaction = db.transaction(['produtos', 'carrinho'], 'readwrite');
+    const produtosStore = transaction.objectStore('produtos');
+    const carrinhoStore = transaction.objectStore('carrinho');
+    
+    // Limpa e salva produtos
+    produtosStore.clear();
+    produtos.forEach(produto => {
+        produtosStore.add(produto);
+    });
+    
+    // Limpa e salva carrinho
+    carrinhoStore.clear();
+    carrinho.forEach(item => {
+        carrinhoStore.add(item);
+    });
 }
 
 // ====== LÓGICA DO CLIENTE (index.html) ======
@@ -298,7 +392,9 @@ function limparCardapio() {
 
 // Executar ao carregar a página
 window.onload = () => {
-    carregarProdutos();
-    renderizarCarrinho();
-    carregarAdminList();
+    inicializarBD().then(() => {
+        carregarProdutos();
+        renderizarCarrinho();
+        carregarAdminList();
+    });
 };
