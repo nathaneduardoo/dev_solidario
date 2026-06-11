@@ -12,7 +12,6 @@
         <div class="logo"><i class="fa-solid fa-utensils"></i> Sabor de Casa</div>
         <nav>
             <a href="#cardapio">Cardápio</a>
-            <a href="#contato">Contato</a>
             <a href="admin.html" class="admin-link"><i class="fa-solid fa-gear"></i> Administração</a>
         </nav>
         <div class="cart-btn" onclick="toggleCart()">
@@ -49,16 +48,12 @@
             <h3><i class="fa-solid fa-basket-shopping"></i> Seu Pedido</h3>
             <button onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div id="cart-items" class="cart-items">
-            </div>
-        
-            <div class="total-line">
-                <div class="cart-footer">
+        <div id="cart-items" class="cart-items"></div>
+        <div class="cart-footer">
             <div class="total-line">
                 <span>Total:</span>
                 <strong id="cart-total">R$ 0,00</strong>
             </div>
-            
             <div class="payment-section">
                 <label for="forma-pagamento">Forma de Pagamento:</label>
                 <select id="forma-pagamento" onchange="verificarTroco()">
@@ -67,7 +62,6 @@
                     <option value="Cartão de Débito">Cartão de Débito</option>
                     <option value="Dinheiro">Dinheiro</option>
                 </select>
-                
                 <div id="div-troco" style="display: none; margin-top: 10px;">
                     <label for="troco">Troco para quanto? (R$):</label>
                     <input type="number" id="troco" placeholder="Ex: 50.00" step="0.01">
@@ -80,9 +74,17 @@
     <div id="toast-container" class="toast-container"></div>
 
     <footer id="contato">
-        <div class="footer-info">
-            <p><i class="fa-solid fa-location-dot"></i> Atendemos toda a região de Maringá e Paiçandu.</p>
-            <p><i class="fa-brands fa-whatsapp"></i> (44) 99999-9999</p>
+        <div class="footer-content">
+            <div class="footer-info">
+                <h3>Entre em contato!</h3>
+                <p><i class="fa-solid fa-location-dot"></i> Atendemos toda a região de Maringá e Paiçandu.</p>
+            </div>
+            <div class="footer-contact">
+                <p class="contact-label">Dúvidas? Fale conosco via WhatsApp!</p>
+                <a href="https://wa.me/5544999999999" class="btn-footer-whatsapp" target="_blank">
+                    <i class="fa-brands fa-whatsapp"></i> (44) 99999-9999
+                </a>
+            </div>
         </div>
         <p class="credits">&copy; 2026 Marmitaria Sabor de Casa. Desenvolvido para Projeto Acadêmico.</p>
     </footer>
