@@ -113,9 +113,13 @@ footer { background: linear-gradient(135deg, var(--dark) 0%, #2a4a6a 100%); colo
 .btn-secondary { background: var(--secondary); color: var(--dark); border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
 .btn-secondary:hover { background: #e39659; }
 
+<<<<<<< HEAD:Marmitaria/dev_solidario/style.css
 .select-tamanho { width: 100%; padding: 8px; border: 1px solid #ced4da; border-radius: 8px; margin-top: 5px; margin-bottom: 15px; background: var(--light); outline: none; font-size: 0.95rem; color: var(--dark); }
 
 /* Login Overlay Estilos */
 .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--light); display: flex; align-items: center; justify-content: center; z-index: 1000; }
 .login-box { background: white; padding: 40px; border-radius: 15px; box-shadow: var(--shadow); width: 100%; max-width: 400px; }
 .login-input { width: 100%; padding: 14px; margin-bottom: 15px; border: 1px solid #ced4da; border-radius: 8px; font-size: 1rem; background-color: var(--light); }
+=======
+.mt-10 { margin-top: 10px; }
+>>>>>>> 6c5817e2c10e8fd80e2e7836f9bb06c44956cc2e:style.css
