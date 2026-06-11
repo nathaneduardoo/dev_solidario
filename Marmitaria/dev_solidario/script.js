@@ -3,13 +3,26 @@
 const produtosIniciais = [
     { id: 1, tipo: 'prato', nome: 'Marmita Tradicional', descricao: 'Arroz, feijão, bife acebolado e fritas', preco: 25.90, imagem: 'https://images.unsplash.com/photo-1628294895950-9805252327bc?auto=format&fit=crop&w=500&q=80' },
     { id: 2, tipo: 'prato', nome: 'Marmita Fit', descricao: 'Arroz integral, frango grelhado e legumes', preco: 28.00, imagem: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80' },
-    { id: 3, tipo: 'bebida', nome: 'Suco de Laranja 500ml', descricao: 'Feito na hora', preco: 9.00, imagem: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80' },
+    { id: 3, tipo: 'bebida', nome: 'Suco de Laranja 500ml', descricao: 'Feito na hora', preco: 9.00, imagem: 'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' },
     { id: 4, tipo: 'bebida', nome: 'Coca-Cola Lata', descricao: '350ml - Gelada', preco: 6.50, imagem: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?auto=format&fit=crop&w=500&q=80' }
 ];
 
 let produtos = [];
 let carrinho = [];
 let db = null;
+
+const NOVA_IMAGEM_SUCO_LARANJA = 'https://images.unsplash.com/photo-1534353473418-4cfa6c56fd38?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
+const ANTIGA_IMAGEM_SUCO_LARANJA = 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?auto=format&fit=crop&w=500&q=80';
+
+function atualizarImagemSucoLaranja() {
+    const suco = produtos.find(p => p.id === 3);
+    if (!suco) return;
+
+    if (suco.imagem === ANTIGA_IMAGEM_SUCO_LARANJA) {
+        suco.imagem = NOVA_IMAGEM_SUCO_LARANJA;
+        salvarDados();
+    }
+}
 
 // Inicializa IndexedDB
 function inicializarBD() {
@@ -68,6 +81,7 @@ function carregarDadosBD() {
             produtos = produtosIniciais;
             salvarDados();
         }
+        atualizarImagemSucoLaranja();
         carregarProdutos();
         carregarAdminList();
     };
@@ -83,6 +97,8 @@ function carregarDadosBD() {
 function carregarDoLocalStorage() {
     produtos = JSON.parse(localStorage.getItem('marmitaria_produtos')) || produtosIniciais;
     carrinho = JSON.parse(localStorage.getItem('marmitaria_carrinho')) || [];
+    atualizarImagemSucoLaranja();
+    salvarDados();
 }
 
 // Salva o estado atual no IndexedDB e LocalStorage como backup
